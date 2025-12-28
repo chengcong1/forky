@@ -82,7 +82,7 @@ func GenerateOffAuth(machineFingerprint *machinecode.MachineCode, customer strin
 		ExpireDate:         expireDate.Format("2006-01-02"),
 		Customer:           customer,
 	}
-	fmt.Println("offAuth", offAuth)
+	// fmt.Println("offAuth", offAuth)
 	// 计算签名
 	// data, err := json.Marshal(license)
 	// if err != nil {
@@ -137,7 +137,7 @@ func SavePrivateKeyToFile(privateKey ed25519.PrivateKey, filePath string) error 
 	if err := pem.Encode(file, pemBlock); err != nil {
 		return fmt.Errorf("编码PEM失败: %w", err)
 	}
-	fmt.Printf("私钥已保存到: %s\n", filePath)
+	// fmt.Printf("the private key path: %s\n", filePath)
 	return nil
 }
 
@@ -171,7 +171,7 @@ func SavePublicKeyToFile(publicKey ed25519.PublicKey, filePath string) error {
 		return fmt.Errorf("编码PEM失败: %w", err)
 	}
 
-	fmt.Printf("公钥已保存到: %s\n", filePath)
+	// fmt.Printf("the public key path: %s\n", filePath)
 	return nil
 }
 
@@ -231,4 +231,35 @@ func LoadPublicKeyFromFile(filePath string) (ed25519.PublicKey, error) {
 	}
 
 	return publicKey, nil
+}
+
+func LoadRequestFromFile(filename string) (string, error) {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return "", err
+	}
+	dataStr := string(data)
+	machineCodeString, err := base64.StdEncoding.DecodeString(dataStr)
+	var machineCode machinecode.MachineCode
+	err = json.Unmarshal(machineCodeString, &machineCode)
+	if err != nil {
+		return "", err
+	}
+	var validFields int
+	if machineCode.CpuId == "" {
+		validFields++
+	}
+	if machineCode.DiskSerial == "" {
+		validFields++
+	}
+	if machineCode.MacAddress == "" {
+		validFields++
+	}
+	if machineCode.MachineId == "" {
+		validFields++
+	}
+	if validFields > 1 { // 至少需要1个字段不为空
+		return "", fmt.Errorf("Insufficient machine code information")
+	}
+	return dataStr, nil
 }

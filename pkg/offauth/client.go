@@ -26,6 +26,14 @@ func warpErr(errs []error) error {
 	}
 	return errors.New(s)
 }
+
+func GenerateRequestFile() error {
+	machineFingerprint, err := GetMachineFingerprintBase64()
+	if err != nil {
+		return err
+	}
+	return os.WriteFile("req", []byte(machineFingerprint), 0644)
+}
 func GetMachineFingerprint() (string, error) {
 	machineCode, errs := machinecode.GetMachineCode()
 	if len(errs) > 1 {
@@ -36,7 +44,7 @@ func GetMachineFingerprint() (string, error) {
 	hash := sha256.Sum256([]byte(machineFingerprint))
 	return hex.EncodeToString(hash[:]), nil
 }
-func GetMachineFingerprintBase85() (string, error) {
+func GetMachineFingerprintBase64() (string, error) {
 	machineCode, errs := machinecode.GetMachineCode()
 	if len(errs) > 1 {
 		return "", warpErr(errs)
