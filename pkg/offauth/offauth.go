@@ -44,8 +44,8 @@ func GenerateLicense(machineFingerprint, customer string, validDays int, private
 
 	license := &License{
 		MachineFingerprint: machineFingerprint,
-		IssueDate:          issueDate.Format("2006-01-02"),
-		ExpireDate:         expireDate.Format("2006-01-02"),
+		IssueDate:          issueDate.Format("2006-01-02 15:04:05"),
+		ExpireDate:         expireDate.Format("2006-01-02 15:04:05"),
 		Customer:           customer,
 	}
 
@@ -99,6 +99,7 @@ func GenerateOffAuth(machineFingerprint *machinecode.MachineCode, customer strin
 	offAuth.Signature = base64.StdEncoding.EncodeToString(signature)
 	return offAuth, nil
 }
+
 func SaveOffAuthToFile(offAuth *OffAuth, filename string) error {
 	data, err := json.MarshalIndent(offAuth, "", "  ")
 	if err != nil {
@@ -182,9 +183,13 @@ func LoadPrivateKeyFromFile(filePath string) (ed25519.PrivateKey, error) {
 	if err != nil {
 		return nil, fmt.Errorf("读取文件失败: %w", err)
 	}
+	return LoadPrivateKeyFromBytes(keyData)
+}
 
+// LoadPrivateKeyFromBytes 从[]byte中读取pem格式的公钥断言为ed25519.PrivateKey
+func LoadPrivateKeyFromBytes(content []byte) (ed25519.PrivateKey, error) {
 	// 解码PEM块
-	block, _ := pem.Decode(keyData)
+	block, _ := pem.Decode(content)
 	if block == nil || block.Type != "PRIVATE KEY" {
 		return nil, errors.New("无效的私钥PEM格式")
 	}
@@ -211,19 +216,21 @@ func LoadPublicKeyFromFile(filePath string) (ed25519.PublicKey, error) {
 	if err != nil {
 		return nil, fmt.Errorf("读取文件失败: %w", err)
 	}
+	return LoadPublicKeyFromBytes(keyData)
+}
 
+// LoadPublicKeyFromBytes 从[]byte中读取pem格式的公钥断言为ed25519.PublicKey
+func LoadPublicKeyFromBytes(content []byte) (ed25519.PublicKey, error) {
 	// 解码PEM块
-	block, _ := pem.Decode(keyData)
+	block, _ := pem.Decode(content)
 	if block == nil || block.Type != "PUBLIC KEY" {
 		return nil, errors.New("无效的公钥PEM格式")
 	}
-
 	// 解析PKIX格式的公钥
 	key, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
 		return nil, fmt.Errorf("解析公钥失败: %w", err)
 	}
-
 	// 类型断言为ed25519公钥
 	publicKey, ok := key.(ed25519.PublicKey)
 	if !ok {

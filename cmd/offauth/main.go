@@ -22,9 +22,10 @@ func main() {
 	validDays := signCmd.Int("days", 0, "validity period (days)")
 	customer := signCmd.String("customer", "", "customer name")
 	reqFile := signCmd.String("reqfile", "", "request license file")
+
+	verifyCmd := flag.NewFlagSet("verify", flag.ExitOnError)
 	switch os.Args[1] {
 	case "genkey":
-		// addCmd.Parse(os.Args[2:])
 		genkey()
 	case "sign":
 		signCmd.Parse(os.Args[2:])
@@ -34,11 +35,18 @@ func main() {
 		} else {
 			log.Println("Sign failed")
 		}
-
+	case "verify":
+		verifyCmd.Parse(os.Args[2:])
+		verifySign()
 	default:
 		fmt.Println("Expected 'genkey' or 'sign' subcommands")
 	}
 }
+
+func verifySign() {
+
+}
+
 func sign(privateKey, reqFile, customer string, validDays int) {
 	k, err := offauth.LoadPrivateKeyFromFile(privateKey)
 	if err != nil {
