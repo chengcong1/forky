@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"net"
 	"strings"
+
+	"golang.org/x/text/encoding/simplifiedchinese"
 )
 
 /*
-
- */
+4、ConvertByte2String([]byte(readString), "GB18030") windows 下转换 字符编码，cmd输出乱码时使用
+*/
 
 // TranSimToFullIPv6 converts a compressed IPv6 address to its expanded form.
 // TranSimToFullIPv6 将压缩的IPv6地址转换为全写，如果是IPV4的地址就直接返回IPV4地址了
@@ -61,4 +63,22 @@ func TranSimToFullIPv6(simIP string) (string, error) {
 	}
 	// Join the address segments with ":" and return the result.
 	return strings.Join(ipList, ":"), nil
+}
+
+// windows 下转换 字符编码，cmd输出乱码时使用
+// byte2String := ConvertByte2String([]byte(readString), "GB18030")
+
+func ConvertByte2String(byte []byte, charset string) string {
+	var str string
+	switch charset {
+	case "GB18030":
+		var decodeBytes, _ = simplifiedchinese.GB18030.NewDecoder().Bytes(byte)
+		str = string(decodeBytes)
+	case "UTF-8":
+		fallthrough
+	default:
+		str = string(byte)
+	}
+	return str
+	// return strings.TrimRight(str, "\r\n\u0000") // 解决某些时候多余的字符
 }
