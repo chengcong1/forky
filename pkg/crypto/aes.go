@@ -16,13 +16,13 @@ func GenerateAESKey(num int) ([]byte, error) {
 	key := make([]byte, num)
 	// 从系统的随机源中读取随机数据填充到 key 中
 	if _, err := rand.Read(key); err != nil {
-		return nil, fmt.Errorf("生成随机AES密钥失败: %v", err)
+		return nil, fmt.Errorf("generating random key error: %v", err)
 	}
 	return key, nil
 }
 
 // 实现AES-GCM加密
-func AesEncrypt(plainText []byte, key []byte) ([]byte, error) {
+func AesEncryptGCM(plainText []byte, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, fmt.Errorf("创建加密块失败: %v", err)
@@ -36,24 +36,6 @@ func AesEncrypt(plainText []byte, key []byte) ([]byte, error) {
 		return nil, fmt.Errorf("生成随机数失败: %v", err)
 	}
 	return gcm.Seal(nonce, nonce, plainText, nil), nil
-}
-
-// 实现AES-GCM解密
-func AesDecrypt(cipherText []byte, key []byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, fmt.Errorf("创建解密块失败: %v", err)
-	}
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return nil, fmt.Errorf("创建GCM模式失败: %v", err)
-	}
-	nonceSize := gcm.NonceSize()
-	if len(cipherText) < nonceSize {
-		return nil, fmt.Errorf("密文长度异常")
-	}
-	nonce, cipherText := cipherText[:nonceSize], cipherText[nonceSize:]
-	return gcm.Open(nil, nonce, cipherText, nil)
 }
 
 // 实现AES-CBC加密
@@ -75,6 +57,24 @@ func AesEncryptCBC(origData []byte, key []byte) ([]byte, error) {
 	return crypted, nil
 }
 
+// 实现AES-GCM解密
+func AesDecryptGCM(cipherText []byte, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, fmt.Errorf("创建解密块失败: %v", err)
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, fmt.Errorf("创建GCM模式失败: %v", err)
+	}
+	nonceSize := gcm.NonceSize()
+	if len(cipherText) < nonceSize {
+		return nil, fmt.Errorf("密文长度异常")
+	}
+	nonce, cipherText := cipherText[:nonceSize], cipherText[nonceSize:]
+	return gcm.Open(nil, nonce, cipherText, nil)
+}
+
 // PKCS7 填充模式
 func pkcs7Padding(ciphertext []byte, blockSize int) []byte {
 	padding := blockSize - len(ciphertext)%blockSize
@@ -84,7 +84,7 @@ func pkcs7Padding(ciphertext []byte, blockSize int) []byte {
 }
 
 // 实现AES-CBC解密
-func AesDeCrypt(cypted []byte, key []byte) ([]byte, error) {
+func AesDeCryptCBC(cypted []byte, key []byte) ([]byte, error) {
 	//创建加密算法实例
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -105,7 +105,7 @@ func AesDeCrypt(cypted []byte, key []byte) ([]byte, error) {
 	return origData, err
 }
 
-// 填充的反向操作，删除填充字符串
+// PKCS7 填充的反向操作，删除填充字符串
 func pkcs7UnPadding(origData []byte) ([]byte, error) {
 	//获取数据长度
 	length := len(origData)
