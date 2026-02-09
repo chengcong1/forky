@@ -3,6 +3,7 @@ package filecrypto
 import (
 	"crypto/aes"
 	"crypto/rand"
+	"strings"
 )
 
 var magicNumber = [4]byte{108, 122, 99, 120}
@@ -11,7 +12,9 @@ const HeaderLength = int(1 + 4 + 2 + 8 + 8 + 64 + 16 + 8)
 
 var suffix = ".lzcxtemp"
 
-var bufferSize = 4096 * 512
+var defaultExt = ".lzcx"
+
+var defaultBufferSize = 4096 * 512
 
 // 添加更多头部信息 1+4+2+8+8+64+16+8=111个字节
 type CustomHeader struct {
@@ -43,4 +46,36 @@ func getIv() [16]byte {
 	}
 	copy(ivv[:16], iv)
 	return ivv
+}
+
+const (
+	Level_1 = int8(-1) // lzcx   自定义Key  仅加密
+	Level_2 = int8(-2) // lzcx   自定义Key  压缩+加密
+
+	Level0 = int8(1) // lzc0   仅拷贝
+	Level1 = int8(2) // lzc1   仅压缩
+	Level2 = int8(3) // lzc2   仅加密
+	Level3 = int8(4) // lzc3   压缩+加密
+
+	Level5 = int8(5) // lzc5   压缩文件夹
+)
+
+// 其他信息，存放文件名和加密后的文件名
+type FileOtherInfo struct {
+	InputFile     string
+	OutputFile    string
+	FileName      string
+	EncryFileName string
+}
+
+// 如果文件夹路径是以/结尾，去掉最后一个/，如果是\结尾，去掉最后一个\
+func removeTrailingBackslash(path string) string {
+	path = strings.ReplaceAll(path, "\\", "/")
+	if strings.HasSuffix(path, "/") {
+		return path[:len(path)-1]
+	}
+	return path
+}
+func GenerateHeader() {
+
 }
