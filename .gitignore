@@ -30,3 +30,9 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# 运行期产物：SQLite 库文件与 WAL / SHM 日志
+*.db
+*.db-shm
+*.db-wal
+

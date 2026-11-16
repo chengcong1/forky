@@ -1,0 +1,56 @@
+{
+  "db": {
+    "driver": "sqlite",
+    "dsn": "data.db",
+    "maxOpenConns": 1
+  },
+  "import": {
+    "files": [
+      "C:/Users/me/Downloads/users.xlsx",
+      "C:/Users/me/Downloads/users.csv"
+    ],
+    "replace": true,
+    "createTable": true,
+    "batchSize": 500,
+    "columnTypes": {
+      "Name": "INTEGER",
+      "Age": "INTEGER"
+    },
+    "indexes": [
+      "name",
+      { "name": "idx_age_sex", "columns": ["age", "sex"] },
+      { "columns": ["age"], "unique": false }
+    ],
+    "progress": 5000,
+    "skipSheets": ["Index", "HideEnum"],
+    "headerRow": 1,
+    "skipRows": 4,
+    "rawHeader": true,
+    "encoding": "auto",
+    "delimiter": ","
+  },
+  "queries": [
+    {
+      "name": "users",
+      "sql": "SELECT name, age, COUNT(*) AS cnt FROM users GROUP BY name, age HAVING cnt > 1",
+      "out": "out/users.csv",
+      "encoding": "gbk"
+    },
+    {
+      "name": "users",
+      "sqlFile": "sql/users.sql",
+      "out": "out/users.xlsx",
+      "sheet": "users"
+    }
+  ],
+  "export": {
+    "dir": "out/全部表",
+    "format": "xlsx",
+    "index": false,
+    "encoding": "utf-8",
+    "bom": true,
+    "progress": 5000
+  },
+  "quiet": false,
+  "timeout": "2h"
+}

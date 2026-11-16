@@ -1,0 +1,70 @@
+# file2db-cli 配置示例（TOML 版，与 example.yaml / example.json 等价）
+#
+# 用法：
+#   file2db-cli -config task.toml
+#
+# 三种格式的字段名完全一样（就是 README 里列的那套），按扩展名自动识别。
+# 注意 TOML 的规则：表头（[db] / [import] ...）会切换「当前表」，
+# 所以根级键必须写在第一个表头之前，子表（如 import.columnTypes）要放在
+# 对应父级键之后、或者改用内联表写法。
+
+quiet = false              # true = 不再输出进度日志（工具自己的汇总行仍会打印）
+timeout = "2h"             # 整次执行的总超时（30m / 2h）；"0" 表示不超时，定时任务建议显式配
+
+[db]
+driver = "sqlite"          # sqlite（默认）/ mysql / postgres
+dsn = "data.db"            # SQLite 是库文件路径或 :memory:；其它库写各自 DSN
+maxOpenConns = 1           # 文件库保持 1 最稳（导入事务要独占连接）
+# setup = ["SET NAMES utf8mb4"]   # 建连后额外执行的语句
+
+[import]
+files = [
+  "C:/Users/me/Downloads/users.xlsx",
+  "C:/Users/me/Downloads/users.csv",
+]
+replace = true             # 导入前 DROP TABLE，即全量覆盖
+createTable = true         # 自动建表（默认 true）
+batchSize = 500            # 每条事务写入的行数
+defaultType = "TEXT"       # 默认 TEXT：前导 0 的小区编号不会被改格式
+progress = 5000            # 每 5000 行打一次进度，0 关闭
+indexes = [                # 导入完成后建索引，下面三种写法都支持
+  "name",
+  "sex,age",               # 逗号分隔 = 复合索引
+  { name = "idx_age", columns = ["age"], unique = false },
+]
+skipSheets = ["Index", "HideEnum"]    # Excel：跳过的辅助 Sheet
+# sheets = ["Sheet1"]                                 # Excel：只读这些 Sheet
+headerRow = 1              # 第几个非空行作为表头
+skipRows = 4               # 表头之后再跳过几行（说明行 / 小计行）
+rawHeader = true           # 保留原始表头，不做小写化与下划线替换
+encoding = "auto"          # CSV 编码：auto / utf-8 / gbk / gb18030 / utf-16le / utf-16be
+delimiter = ","            # CSV 分隔符，制表符写 "\t"
+
+[import.columnTypes]       # 子表：只能写在 import 的最后
+age = "INTEGER"
+sex = "INTEGER"
+
+[[queries]]
+name = "users"           # name 只用于日志
+sql = """
+SELECT name, age, COUNT(*) AS cnt
+FROM users
+GROUP BY name, age
+HAVING cnt > 1
+"""
+out = "out/users.csv"     # 后缀决定格式；留空打印到控制台
+encoding = "gbk"           # 国内用 Excel 打开建议 gbk
+
+[[queries]]
+name = "users"
+sqlFile = "sql/users.sql" # 相对路径按配置文件所在目录解析
+out = "out/users.xlsx"
+sheet = "users"           # 写 xlsx 时的 Sheet 名
+
+[export]
+dir = "out/全部表"          # 一表一个文件
+format = "xlsx"            # csv / xlsx
+index = false              # 不导出自增主键 id 列（要来回导的表建议 false）
+encoding = "utf-8"         # CSV 输出编码
+bom = true                 # CSV 写 BOM，Excel 打开 UTF-8 中文才不乱码
+progress = 5000

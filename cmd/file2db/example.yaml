@@ -1,0 +1,70 @@
+# file2db-cli 配置示例（YAML 版，与 example.toml / example.json 等价）
+#
+# 用法：
+#   file2db-cli -config task.yaml          # 不给命令时按 import -> queries -> export 顺序执行
+#   file2db-cli query -config task.yaml    # 只执行其中一步
+#
+# 三种格式的字段名完全一样（就是 README 里列的那套），按扩展名自动识别；
+# 认不出来时用 -config-format yaml 指定。
+
+# 整次执行的总超时，30m / 2h 这种写法；0 或留空表示不超时。
+# 定时任务建议显式配上：任务卡住时会被自动中止，不会一直占着调度位。
+timeout: "2h"
+
+db:
+  driver: sqlite            # sqlite（默认）/ mysql / postgres
+  dsn: data.db              # SQLite 是库文件路径或 :memory:；其它库写各自 DSN
+  maxOpenConns: 1           # 文件库保持 1 最稳（导入事务要独占连接）
+  # setup:                  # 建连后额外执行的语句
+  #   - SET NAMES utf8mb4
+
+import:
+  files:
+    - C:/Users/me/Downloads/users.xlsx
+    - C:/Users/me/Downloads/users.csv
+  replace: true             # 导入前 DROP TABLE，即全量覆盖
+  createTable: true         # 自动建表（默认 true）
+  batchSize: 1000           # 每条事务写入的行数
+  defaultType: TEXT         # 默认 TEXT：前导 0 的小区编号不会被改格式
+  columnTypes:              # 指定列类型，未列出的列用 defaultType
+    age: INTEGER
+    sex: INTEGER
+  indexes:                  # 导入完成后建索引，下面三种写法都支持
+    - name
+    - age,sex               # 逗号分隔 = 复合索引
+    - name: idx_age         # 也可以写完整的对象
+      columns: [age]
+      unique: false
+  progress: 5000            # 每 5000 行打一次进度，0 关闭
+  skipSheets: [Index, HideEnum]   # Excel：跳过的辅助 Sheet
+  # sheets: [user]                     # Excel：只读这些 Sheet，留空取活动 Sheet
+  headerRow: 1              # 第几个非空行作为表头
+  skipRows: 4               # 表头之后再跳过几行（说明行 / 小计行）
+  rawHeader: true           # 保留原始表头，不做小写化与下划线替换
+  encoding: auto            # CSV 编码：auto / utf-8 / gbk / gb18030 / utf-16le / utf-16be
+  delimiter: ","            # CSV 分隔符，制表符写 "\t"
+
+queries:
+  - name: users             # name 只用于日志
+    sql: |                  # YAML 的块标量用来写多行 SQL 很舒服
+      SELECT name, age, COUNT(*) AS cnt
+      FROM users
+      GROUP BY name, age
+      HAVING cnt > 1
+    out: out/users.csv      # 后缀决定格式；留空打印到控制台
+    encoding: gbk           # 国内用 Excel 打开建议 gbk
+  - name: users
+    sqlFile: sql/users.sql  # 相对路径按配置文件所在目录解析
+    out: out/users.xlsx
+    sheet: Sheet1           # 写 xlsx 时的 Sheet 名
+
+export:
+  dir: out/全部表               # 一表一个文件
+  # tables: [Sheet1, Sheet2]   # 只导出这些表；留空导出全部用户表
+  format: xlsx                 # csv / xlsx
+  index: false                 # 不导出自增主键 id 列（要来回导的表建议 false）
+  encoding: utf-8              # CSV 输出编码
+  bom: true                    # CSV 写 BOM，Excel 打开 UTF-8 中文才不乱码
+  progress: 5000
+
+quiet: false                   # true = 不再输出进度日志（工具自己的汇总行仍会打印）

@@ -1,0 +1,32 @@
+{
+  "db": {
+    "driver": "sqlite",
+    "dsn": "data.db",
+    "maxOpenConns": 1
+  },
+  "import": {
+    "files": [
+      "C:\\project\\coding\\apps\\021-040\\031_go+sql+excel\\excelizev4\\test.xlsx"
+    ],
+    "replace": true,
+    "createTable": true,
+    "batchSize": 500,
+    "columnTypes": {
+      "Name": "INTEGER",
+      "Age": "INTEGER"
+    },
+    "indexes": [
+      "name",
+      { "name": "idx_age_sex", "columns": ["age", "sex"] },
+      { "columns": ["age"], "unique": false }
+    ],
+    "progress": 5000,
+    "skipSheets": ["Index", "HideEnum"],
+    "headerRow": 1,
+    "skipRows": 4,
+    "rawHeader": true,
+    "encoding": "auto",
+    "delimiter": ","
+  },
+  "quiet": false
+}
